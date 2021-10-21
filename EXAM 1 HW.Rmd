@@ -1,0 +1,132 @@
+---
+title: "EXAM 1"
+author: "Chan, Kim Fai"
+date: "10/18/2021"
+output:
+  html_document: default
+---
+
+setwd("~/Desktop/jeff's documents/Master of Economics in CCNY/ECONOMETRICS ECO B2000/EXAM 1")
+load("Household_Pulse_data_v2.RData")
+attach(Household_Pulse_data)
+summary(Household_Pulse_data)
+
+#1
+xtabs(~ EEDUC + RECVDVACC + REGION)
+
+
+northeast <- (REGION == "northeast") & (RECVDVACC == "yes got vaxx") & (EEDUC == "SOME COLL")
+rnorm(northeast)
+y = rnorm(REGION == "northeast")
+summary(northeast)
+x = rnorm(RECVDVACC == "yes got vaxx")
+
+t.test(x,y)
+
+summary(as.list.numeric_version(northeast))
+t.test(northeast)
+#overall the higher the education the higher rate of vaxx, and lower the education level,and this resault applys to all of the four region; the lower rate of education.
+#and compare between 4 region, the Northeast is averagely higher than the rest 3 region, which is 92% and the rest close to 86%-87%
+
+
+
+#2
+#Anova test 
+Anova_var<- ((REGION == "West") & (RECVDVACC == "yes got vaxx") & (EEDUC == "assoc deg") & (GENID_DESCRIBE == "Female"))
+x = (REGION == "West")
+x1 = (RECVDVACC == "yes got vaxx")
+y = (EEDUC == "assoc deg")
+y1 = (GENID_DESCRIBE == "Female")
+
+#oneway.test(Anova_var)
+summary(as.list.numeric_version(Anova_var))
+t.test(x,y)
+#the same, for this dataset, higher the education, higher the vaxx level.the male vaxx percentage is higher than the femal, whcih are 89.5% v.s. 87.9%
+
+#3
+######METHOD ONE:
+#LET ME TRY MAKE REGRESSION IN A SET OF VARIOUBLE TO SEE HOW SIGNIFICANT BETWEEN MULTIPLE VARIABLE AND INCOME:
+Household_Pulse_data$REGION <- factor(Household_Pulse_data$REGION)
+Household_Pulse_data$ANXIOUS <- as.numeric(Household_Pulse_data$ANXIOUS)
+Household_Pulse_data$EEDUC <- as.numeric(Household_Pulse_data$EEDUC)
+Household_Pulse_data$EGENID_BIRTH <- as.numeric(Household_Pulse_data$EGENID_BIRTH)
+Household_Pulse_data$RRACE <- as.numeric(Household_Pulse_data$RRACE)
+Household_Pulse_data$REGION <- as.numeric(Household_Pulse_data$REGION)
+Household_Pulse_data$INCOME <- as.numeric(Household_Pulse_data$INCOME)
+
+TOTAL <- lm(INCOME ~ `EEDUC` + EGENID_BIRTH + `RRACE` + ANXIOUS + `REGION`, Household_Pulse_data)
+summary(TOTAL)
+
+
+#LET'S SEE STEP REGRESSION:
+step(TOTAL)
+#WE COULD DELETE SOME LOWER NUMBER IN AIC VARIOUABLE
+
+#LET ME SEE MORE DETAILS ABOUT EEDUC AND ANXIOUS:
+#TRY ANXIOUS AND INCOME:
+Household_Pulse_data$ANXIOUS <- as.numeric(Household_Pulse_data$ANXIOUS)
+mlr <- lm(ANXIOUS ~ `INCOME`, Household_Pulse_data)
+summary(mlr)
+
+par(mfrow = c(1, 2))
+plot(Household_Pulse_data$ANXIOUS, Household_Pulse_data$INCOME)
+
+#THEN TRY EEDUC AND INCOME:
+Household_Pulse_data$EEDUC <- as.numeric(Household_Pulse_data$EEDUC)
+EEDUC_INCOME <- lm(EEDUC ~ `INCOME`, Household_Pulse_data)
+summary(EEDUC_INCOME)
+par(mfrow = c(1, 2))
+plot(Household_Pulse_data$EEDUC, Household_Pulse_data$INCOME)
+
+#I DECIDE TO JUST APPLY EEDUC AND ANXIOUS AND REMOVE VARIOUABLE REGION, RRACE AND GENDER.
+Household_Pulse_data$ANXIOUS <- as.numeric(Household_Pulse_data$ANXIOUS)
+Household_Pulse_data$EEDUC <- as.numeric(Household_Pulse_data$EEDUC)
+Household_Pulse_data$INCOME <- as.numeric(Household_Pulse_data$INCOME)
+
+NEW_TOTAL <- lm(INCOME ~ `EEDUC` + ANXIOUS, Household_Pulse_data)
+summary(TOTAL)
+plot(NEW_TOTAL, 2)
+detach()
+
+#LET'S TRY THE KNN FOR BETTER VIEW:
+```{r, echo=FALSE}
+load("Household_Pulse_data_v2.RData")
+attach(Household_Pulse_data)
+Household_Pulse_data$ANXIOUS <- as.numeric(Household_Pulse_data$ANXIOUS)
+Household_Pulse_data$EEDUC <- as.numeric(Household_Pulse_data$EEDUC)
+Household_Pulse_data$INCOME <- as.numeric(Household_Pulse_data$INCOME)
+NEW_TOTAL <- lm(INCOME ~ `EEDUC` + ANXIOUS, Household_Pulse_data)
+summary(NEW_TOTAL)
+plot(NEW_TOTAL, 2)
+# maybe get fancy
+require(stargazer)
+stargazer(NEW_TOTAL, type = "text")
+# play with stargazer instead of summary, it can look nicer!
+```
+
+
+```{r echo=FALSE}
+require(AER)
+```
+
+
+```{r echo=FALSE}
+# subset in order to plot...
+NNobs <- length(NEW_TOTAL)
+set.seed(12345) # just so you can replicate and get same "random" choices
+graph_obs <- (runif(NNobs) < 0.1) # so something like just 1/10 as many obs
+dat_graph <-subset(Household_Pulse_data,graph_obs)
+
+Household_Pulse_data$EEDUC <- as.numeric(Household_Pulse_data$EEDUC)
+plot(INCOME ~ jitter(EEDUC, factor = 2), pch = 16, col = rgb(0.5, 0.5, 0.5, alpha = 0.2), data = dat_graph)
+
+plot(INCOME ~ jitter(ANXIOUS, factor = 2), pch = 16, col = rgb(0.5, 0.5, 0.5, alpha = 0.2), ylim = c(0,150000), data = dat_graph)
+# discus what you see in this plot
+```
+
+
+```{r eval = FALSE}
+detach()
+```
+
+#CONCLUSION: I CREATE A STEP FUNCTION TO DETERMINE WHICH VARIABLE IS KEY INPORTANT TO INCOME. WE FOUND THAT THE EDUCTION LEVEL IS SIGNIFICANT VARIABLE TO INCOME. AND INCOME LEVEL CASUE ANXIOUS LEVEL INCREASE, WHICH WITH A POSITIVE RELATIONSHIP. AND SEEMS REGION DOESN'T HAVE TOO MUCH IMPACT TO INCOME. 
